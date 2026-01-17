@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "Get all equipment",
+      "method": "GET",
+      "path": "/?path=equipment",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Get orders",
+      "method": "GET",
+      "path": "/?path=orders",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Get client info",
+      "method": "GET",
+      "path": "/?path=client",
+      "expectedStatus": 200
+    }
+  ]
+}

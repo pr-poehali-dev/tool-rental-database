@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,24 @@ interface Order {
   endDate: string;
   status: 'active' | 'pending' | 'completed';
   total: number;
+  contractNumber?: string;
 }
+
+interface Client {
+  companyName: string;
+  inn: string;
+  kpp: string;
+  legalAddress: string;
+  contactPerson: string;
+  phone: string;
+  email: string;
+  bankName: string;
+  accountNumber: string;
+  correspondentAccount: string;
+  bik: string;
+}
+
+const API_URL = 'https://functions.poehali.dev/3f9b7830-8825-4dc9-bec0-312288aae61e';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('catalog');
@@ -40,88 +57,67 @@ const Index = () => {
     { sender: 'manager', text: 'Здравствуйте! Чем могу помочь?' }
   ]);
   const [newMessage, setNewMessage] = useState('');
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [client, setClient] = useState<Client>({
+    companyName: '',
+    inn: '',
+    kpp: '',
+    legalAddress: '',
+    contactPerson: '',
+    phone: '',
+    email: '',
+    bankName: '',
+    accountNumber: '',
+    correspondentAccount: '',
+    bik: ''
+  });
+  const [loading, setLoading] = useState(false);
 
-  const equipment: Equipment[] = [
-    {
-      id: 1,
-      name: 'Перфоратор Bosch GBH 2-28',
-      category: 'Электроинструмент',
-      price: 800,
-      period: 'сутки',
-      status: 'available',
-      image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400',
-      specs: ['Мощность 880 Вт', 'SDS-plus', 'Вес 3.2 кг']
-    },
-    {
-      id: 2,
-      name: 'Бетономешалка 180л',
-      category: 'Строительное оборудование',
-      price: 1200,
-      period: 'сутки',
-      status: 'available',
-      image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400',
-      specs: ['Объём 180л', '220В', 'Производительность 2.5 м³/ч']
-    },
-    {
-      id: 3,
-      name: 'Строительный лазерный нивелир',
-      category: 'Измерительный инструмент',
-      price: 600,
-      period: 'сутки',
-      status: 'available',
-      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400',
-      specs: ['Дальность 30м', 'Точность ±0.3мм/м', 'Автоматическое выравнивание']
-    },
-    {
-      id: 4,
-      name: 'Генератор 5 кВт',
-      category: 'Энергетическое оборудование',
-      price: 2000,
-      period: 'сутки',
-      status: 'available',
-      image: 'https://images.unsplash.com/photo-1581092335397-9583eb92d232?w=400',
-      specs: ['Мощность 5 кВт', 'Бензиновый', 'Время работы 8 ч']
-    },
-    {
-      id: 5,
-      name: 'Шлифовальная машина',
-      category: 'Электроинструмент',
-      price: 500,
-      period: 'сутки',
-      status: 'rented',
-      image: 'https://images.unsplash.com/photo-1581092162384-8987c1d64926?w=400',
-      specs: ['Диск 230мм', 'Мощность 2000 Вт', 'Регулировка оборотов']
-    },
-    {
-      id: 6,
-      name: 'Виброплита 100 кг',
-      category: 'Строительное оборудование',
-      price: 1500,
-      period: 'сутки',
-      status: 'available',
-      image: 'https://images.unsplash.com/photo-1581092583537-20d51876f863?w=400',
-      specs: ['Вес 100 кг', 'Бензиновая', 'Площадь 500 м²/ч']
-    }
-  ];
+  useEffect(() => {
+    loadEquipment();
+    loadOrders();
+    loadClient();
+  }, []);
 
-  const orders: Order[] = [
-    {
-      id: 1,
-      equipment: 'Перфоратор Bosch GBH 2-28',
-      startDate: '2026-01-15',
-      endDate: '2026-01-20',
-      status: 'active',
-      total: 4000
-    },
-    {
-      id: 2,
-      equipment: 'Генератор 5 кВт',
-      startDate: '2026-01-10',
-      endDate: '2026-01-12',
-      status: 'completed',
-      total: 4000
+  const loadEquipment = async () => {
+    try {
+      const params = new URLSearchParams();
+      params.append('path', 'equipment');
+      if (selectedCategory !== 'all') params.append('category', selectedCategory);
+      if (searchQuery) params.append('search', searchQuery);
+      
+      const response = await fetch(`${API_URL}?${params}`);
+      const data = await response.json();
+      setEquipment(data);
+    } catch (error) {
+      console.error('Ошибка загрузки оборудования:', error);
     }
-  ];
+  };
+
+  const loadOrders = async () => {
+    try {
+      const response = await fetch(`${API_URL}?path=orders`);
+      const data = await response.json();
+      setOrders(data);
+    } catch (error) {
+      console.error('Ошибка загрузки заказов:', error);
+    }
+  };
+
+  const loadClient = async () => {
+    try {
+      const response = await fetch(`${API_URL}?path=client`);
+      const data = await response.json();
+      if (data.companyName) setClient(data);
+    } catch (error) {
+      console.error('Ошибка загрузки клиента:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadEquipment();
+  }, [selectedCategory, searchQuery]);
 
   const categories = ['all', 'Электроинструмент', 'Строительное оборудование', 'Измерительный инструмент', 'Энергетическое оборудование'];
 
@@ -149,20 +145,54 @@ const Index = () => {
     }
   };
 
-  const generateContract = () => {
-    const contractData = {
-      company: 'ООО "ПрокатПро"',
-      client: 'Клиент',
-      date: new Date().toLocaleDateString('ru-RU'),
-      items: cart.map(item => ({
-        name: item.name,
-        price: item.price,
-        period: item.period
-      })),
-      total: cart.reduce((sum, item) => sum + item.price, 0)
-    };
+  const generateContract = async () => {
+    setLoading(true);
+    try {
+      const equipmentIds = cart.map(item => item.id);
+      const today = new Date();
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + 7);
+      
+      const response = await fetch(`${API_URL}?path=order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          equipmentIds,
+          startDate: today.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
+        })
+      });
+      
+      const data = await response.json();
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      
+      alert(`Договор аренды №${data.contractNumber}\n\nДата: ${today.toLocaleDateString('ru-RU')}\nАрендатор: ${client.companyName || 'Клиент'}\nАрендодатель: ООО "ПрокатПро"\n\nОборудование:\n${cart.map(i => `${i.name} - ${i.price}₽/${i.period}`).join('\n')}\n\nИтого: ${total}₽\n\nДоговор будет отправлен на вашу электронную почту в формате PDF.`);
+      
+      setCart([]);
+      loadOrders();
+    } catch (error) {
+      console.error('Ошибка создания договора:', error);
+      alert('Ошибка создания договора');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    alert(`Договор аренды №${Math.floor(Math.random() * 10000)}\n\nДата: ${contractData.date}\nАрендатор: ${contractData.client}\nАрендодатель: ${contractData.company}\n\nОборудование:\n${contractData.items.map(i => `${i.name} - ${i.price}₽/${i.period}`).join('\n')}\n\nИтого: ${contractData.total}₽\n\nДоговор будет отправлен на вашу электронную почту в формате PDF.`);
+  const saveClient = async () => {
+    setLoading(true);
+    try {
+      await fetch(`${API_URL}?path=client`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(client)
+      });
+      alert('Данные сохранены');
+    } catch (error) {
+      console.error('Ошибка сохранения клиента:', error);
+      alert('Ошибка сохранения данных');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -218,9 +248,9 @@ const Index = () => {
                             <span>Итого:</span>
                             <span>{cart.reduce((sum, item) => sum + item.price, 0)}₽</span>
                           </div>
-                          <Button className="w-full" onClick={generateContract}>
+                          <Button className="w-full" onClick={generateContract} disabled={loading}>
                             <Icon name="FileText" size={16} className="mr-2" />
-                            Сформировать договор
+                            {loading ? 'Создание...' : 'Сформировать договор'}
                           </Button>
                         </div>
                       </>
@@ -366,7 +396,7 @@ const Index = () => {
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Договор аренды №{order.id}</DialogTitle>
+                          <DialogTitle>Договор аренды №{order.contractNumber || order.id}</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div>
@@ -400,35 +430,35 @@ const Index = () => {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium">Название организации</label>
-                  <Input defaultValue="ООО 'Строймонтаж'" className="mt-1" />
+                  <Input value={client.companyName} onChange={(e) => setClient({...client, companyName: e.target.value})} className="mt-1" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">ИНН</label>
-                  <Input defaultValue="7701234567" className="mt-1" />
+                  <Input value={client.inn} onChange={(e) => setClient({...client, inn: e.target.value})} className="mt-1" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">КПП</label>
-                  <Input defaultValue="770101001" className="mt-1" />
+                  <Input value={client.kpp} onChange={(e) => setClient({...client, kpp: e.target.value})} className="mt-1" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Юридический адрес</label>
-                  <Input defaultValue="г. Москва, ул. Примерная, д. 1" className="mt-1" />
+                  <Input value={client.legalAddress} onChange={(e) => setClient({...client, legalAddress: e.target.value})} className="mt-1" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Контактное лицо</label>
-                  <Input defaultValue="Иванов Иван Иванович" className="mt-1" />
+                  <Input value={client.contactPerson} onChange={(e) => setClient({...client, contactPerson: e.target.value})} className="mt-1" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Телефон</label>
-                  <Input defaultValue="+7 (999) 123-45-67" className="mt-1" />
+                  <Input value={client.phone} onChange={(e) => setClient({...client, phone: e.target.value})} className="mt-1" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Email</label>
-                  <Input defaultValue="info@stroimontazh.ru" type="email" className="mt-1" />
+                  <Input value={client.email} onChange={(e) => setClient({...client, email: e.target.value})} type="email" className="mt-1" />
                 </div>
-                <Button className="w-full">
+                <Button className="w-full" onClick={saveClient} disabled={loading}>
                   <Icon name="Save" size={16} className="mr-2" />
-                  Сохранить изменения
+                  {loading ? 'Сохранение...' : 'Сохранить изменения'}
                 </Button>
               </div>
             </Card>
@@ -469,19 +499,19 @@ const Index = () => {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium">Банк</label>
-                  <Input defaultValue="ПАО Сбербанк" className="mt-1" />
+                  <Input value={client.bankName} onChange={(e) => setClient({...client, bankName: e.target.value})} className="mt-1" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Расчётный счёт</label>
-                  <Input defaultValue="40702810100000000000" className="mt-1" />
+                  <Input value={client.accountNumber} onChange={(e) => setClient({...client, accountNumber: e.target.value})} className="mt-1" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Корреспондентский счёт</label>
-                  <Input defaultValue="30101810400000000225" className="mt-1" />
+                  <Input value={client.correspondentAccount} onChange={(e) => setClient({...client, correspondentAccount: e.target.value})} className="mt-1" />
                 </div>
                 <div>
                   <label className="text-sm font-medium">БИК</label>
-                  <Input defaultValue="044525225" className="mt-1" />
+                  <Input value={client.bik} onChange={(e) => setClient({...client, bik: e.target.value})} className="mt-1" />
                 </div>
                 <Separator className="my-6" />
                 <div className="space-y-3">
